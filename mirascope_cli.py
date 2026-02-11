@@ -58,18 +58,18 @@ def cli():
     # Load base prompt and skill information
     base_prompt = load_base_prompt()
     claude_md = load_claude_md()
-    
+
     # Build system prompt with all components
     system_prompt = base_prompt + claude_md
-    
+
     # Add skill inventory if available
     if skill_inventory:
         system_prompt += "\n\n" + skill_inventory
-    
+
     # Add skill writer guide for documentation
     if skill_writer_guide:
         system_prompt += "\n\n" + skill_writer_guide
-    
+
     print("Welcome to the Custom CLI Assistant! Type your commands below.")
     print("  - Press Alt + Enter for new lines")
     print("  - Press Enter to submit")
@@ -80,21 +80,21 @@ def cli():
     messages = [
         llm.messages.system(system_prompt),
     ]
-    
+
     while True:
         try:
             user_input = multiline_input("> ")
         except (EOFError, KeyboardInterrupt):
             print("\nGoodbye!")
             break
-        
+
         if not user_input:
             continue
-        
+
         if user_input.lower().strip() in ['/quit', '/exit', '/q']:
             print("Goodbye!")
             break
-        
+
         messages.append(llm.messages.user(user_input))
 
         response = model.stream(
@@ -114,72 +114,88 @@ def cli():
         while True:  # The Agent Loop
             # Process tool calls
             clarify_responses = []  # Collect clarify tool responses
-            
-            for stream in response.streams():
-                match stream.content_type:
-                    case "text":
-                        for chunk in stream:
-                            print(chunk, flush=True, end="")
-                        print("\n")
-                    case "thought":
-                        border = "~" * 80
-                        print(f"\n{border}")
-                        print(f"🧠 THOUGHT")
-                        print(f"{border}")
-                        for chunk in stream:
-                            print(chunk, flush=True, end="")
-                        print(f"\n{border}\n")
-                    case "tool_call":
-                        tool_call = stream.collect()
+            interrupted = False
 
-                        # Handle clarify tool specially - prompt user for input
-                        if tool_call.name == "clarify":
-                            # Parse args if it's a JSON string
-                            args = tool_call.args
-                            if isinstance(args, str):
-                                args = json.loads(args)
-                            question = args.get("question", "Clarifying question?")
-                            print(f"\n❓ CLARIFYING QUESTION:")
-                            print(f"{question}")
-                            print()
-                            try:
-                                user_response = multiline_input("Your answer: ")
-                                clarify_responses.append(
-                                    llm.ToolOutput(id=tool_call.id, name=tool_call.name, result=f"User response: {user_response}")
-                                )
-                            except (EOFError, KeyboardInterrupt):
-                                print("\nClarification cancelled.")
-                                clarify_responses.append(
-                                    llm.ToolOutput(id=tool_call.id, name=tool_call.name, result="Clarification cancelled by user.")
-                                )
-                        else:
-                            # Print other tool calls normally
-                            border = "=" * 80
-                            tool_header = f"🛠️  TOOL CALL: {tool_call.name}"
-                            # Parse args if it's a JSON string
-                            args = tool_call.args
-                            if isinstance(args, str):
-                                args = json.loads(args)
-                            tool_args = json.dumps(args, indent=2, ensure_ascii=False)
+            try:
+                for stream in response.streams():
+                    match stream.content_type:
+                        case "text":
+                            for chunk in stream:
+                                print(chunk, flush=True, end="")
+                            print("\n")
+                        case "thought":
+                            border = "~" * 80
                             print(f"\n{border}")
-                            print(f"{tool_header}")
-                            print(f"Args:")
-                            print(f"{tool_args}")
-                            print(f"{border}\n")
+                            print(f"🧠 THOUGHT")
+                            print(f"{border}")
+                            for chunk in stream:
+                                print(chunk, flush=True, end="")
+                            print(f"\n{border}\n")
+                        case "tool_call":
+                            tool_call = stream.collect()
+
+                            # Handle clarify tool specially - prompt user for input
+                            if tool_call.name == "clarify":
+                                # Parse args if it's a JSON string
+                                args = tool_call.args
+                                if isinstance(args, str):
+                                    args = json.loads(args)
+                                question = args.get("question", "Clarifying question?")
+                                print(f"\n❓ CLARIFYING QUESTION:")
+                                print(f"{question}")
+                                print()
+                                try:
+                                    user_response = multiline_input("Your answer: ")
+                                    clarify_responses.append(
+                                        llm.ToolOutput(id=tool_call.id, name=tool_call.name, result=f"User response: {user_response}")
+                                    )
+                                except (EOFError, KeyboardInterrupt):
+                                    print("\nClarification cancelled.")
+                                    clarify_responses.append(
+                                        llm.ToolOutput(id=tool_call.id, name=tool_call.name, result="Clarification cancelled by user.")
+                                    )
+                            else:
+                                # Print other tool calls normally
+                                border = "=" * 80
+                                tool_header = f"🛠️  TOOL CALL: {tool_call.name}"
+                                # Parse args if it's a JSON string
+                                args = tool_call.args
+                                if isinstance(args, str):
+                                    args = json.loads(args)
+                                tool_args = json.dumps(args, indent=2, ensure_ascii=False)
+                                print(f"\n{border}")
+                                print(f"{tool_header}")
+                                print(f"Args:")
+                                print(f"{tool_args}")
+                                print(f"{border}\n")
+            except KeyboardInterrupt:
+                interrupted = True
+                print("\n\n⚠️  Generation interrupted by user.\n")
+
+            if interrupted:
+                # Preserve partial context: response.messages contains
+                # whatever was accumulated before the interruption
+                try:
+                    messages = response.messages
+                except Exception:
+                    # If messages aren't available from partial response,
+                    # add a synthetic assistant message with what we had
+                    messages.append(llm.messages.assistant("[Response interrupted by user]"))
+                break
 
             # Execute clarify responses if any
             if clarify_responses:
                 response = response.resume(clarify_responses)
                 continue  # Continue the loop with the clarified response
-            
+
             # Check if there are any tool calls to execute
             if response.tool_calls:
                 response = response.resume(response.execute_tools())
             else:
                 break
-        
-        messages = response.messages
 
+        if not interrupted:
+            messages = response.messages
 
 if __name__ == "__main__":
     cli()
