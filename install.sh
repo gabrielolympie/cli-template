@@ -1,6 +1,6 @@
 #!/bin/bash
 # Install script for Mirascope CLI
-# This script installs Python dependencies and sets up Playwright
+# This script installs Python dependencies and sets up Playwright CLI
 
 set -e  # Exit on error
 
@@ -29,6 +29,14 @@ fi
 
 echo "✓ pip found"
 
+# Check for npm
+if ! command_exists npm; then
+    echo "Error: npm is not installed"
+    exit 1
+fi
+
+echo "✓ npm found: $(npm --version)"
+
 # Create virtual environment if it doesn't exist
 if [ ! -d "venv" ]; then
     echo ""
@@ -49,10 +57,14 @@ echo ""
 echo "Installing Python dependencies from requirements.txt..."
 pip install -r requirements.txt
 
-# Install Playwright browsers
+# Install Playwright CLI via npm
 echo ""
-echo "Installing Playwright browsers..."
-python -m playwright install --with-deps
+echo "Installing Playwright CLI..."
+npm install -g @playwright/cli@latest
+
+# Verify Playwright CLI installation
+echo "Verifying Playwright CLI installation..."
+playwright-cli --help
 
 # Initialize the skill system
 echo ""
