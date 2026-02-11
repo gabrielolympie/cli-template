@@ -12,6 +12,7 @@ from src.multiline_input import multiline_input
 from src.tools.plan import plan
 from src.tools.summarize_conversation import summarize_conversation, generate_conversation_summary
 from src.tools.browse_internet import browse_internet
+from src.tools.estimate_tokens import estimate_tokens_from_messages, format_token_estimate
 from src.tools.clarify import clarify
 
 # Skill Management
@@ -225,6 +226,14 @@ def cli():
 
         if not interrupted:
             messages = response.messages
+
+        # Display token estimate at the end of each turn
+        if not interrupted:
+            token_count = estimate_tokens_from_messages(messages)
+            max_tokens = 8196
+            print()
+            print(f"📊 Context window usage: {format_token_estimate(token_count, max_tokens)}")
+            print()
 
 if __name__ == "__main__":
     cli()

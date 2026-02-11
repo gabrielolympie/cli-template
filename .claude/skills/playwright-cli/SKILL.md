@@ -10,7 +10,7 @@ allowed-tools: Bash(playwright-cli:*)
 
 ```bash
 # open new browser (always in headed mode by default)
-playwright-cli open
+playwright-cli open --headed
 # navigate to a page
 playwright-cli goto https://playwright.dev
 # interact with the page using refs from the snapshot
