@@ -189,3 +189,21 @@ default-options:
 - Keep information concise and well-organized
 - Use the "Contents" section to build a knowledge base over time
 - Update when persona, project structure, or team guidelines change
+## CLI COMMANDS
+
+The Mirascope CLI supports several special commands that can be typed at the prompt:
+
+### /reset
+Clears the conversation history and restarts with the initial configuration. All prior context is lost.
+
+### /compact
+Summarizes the conversation history using an LLM, clears the conversation, and adds the summary as context. This allows you to:
+- Reduce token usage while preserving important information
+- Start fresh while maintaining context of what was discussed
+- Come back to the initial state with key decisions and progress preserved
+
+When you use /compact, the assistant will:
+1. Generate a concise summary of the conversation
+2. Clear all conversation history
+3. Add the summary as the first user message in the new context
+

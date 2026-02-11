@@ -10,6 +10,7 @@ from src.tools.file_edit import file_edit
 from src.tools.execute_bash import execute_bash
 from src.multiline_input import multiline_input
 from src.tools.plan import plan
+from src.tools.summarize_conversation import summarize_conversation, generate_conversation_summary
 from src.tools.browse_internet import browse_internet
 from src.tools.clarify import clarify
 
@@ -76,6 +77,7 @@ def cli():
     print("  - Press Ctrl+C to cancel input")
     print("  - Type '/quit', '/exit', or '/q' to exit")
     print("  - Type '/reset' to clear conversation history and restart")
+    print("  - Type '/compact' to summarize conversation, clear history, and preserve context")
     print()
 
     messages = [
@@ -103,6 +105,24 @@ def cli():
                 llm.messages.system(system_prompt),
             ]
             continue
+
+        if user_input.lower().strip() == '/compact':
+            print("\n🔄 Compacting conversation history...\n")
+            
+            # Generate summary of conversation
+            summary = generate_conversation_summary(messages)
+            
+            print("📝 Conversation summary:")
+            print(summary)
+            print()
+            
+            # Reset messages with system prompt and summary
+            messages = [
+                llm.messages.system(system_prompt),
+                llm.messages.user(f"Previous conversation compacted. Here's a summary of what we've discussed so far:\n\n{summary}\n\nYou can now continue the conversation from this point.")
+            ]
+            print("✅ Conversation compacted and history cleared.\n")
+            continue
         messages.append(llm.messages.user(user_input))
 
         response = model.stream(
@@ -115,6 +135,7 @@ def cli():
                 plan,
                 browse_internet,
                 clarify,
+                summarize_conversation,
                 # Skill tools will be added dynamically
             ],
         )

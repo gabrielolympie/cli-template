@@ -17,6 +17,14 @@ This file serves as persistent memory for the agent. It stores:
 
 ### System Updates
 
+**2025-02-11**: Added `/compact` command for conversation history management
+- Type `/compact` to summarize conversation, clear history, and preserve context
+- Automatically generates an LLM summary of all conversation history
+- Resets messages with system prompt plus summary as first user message
+- Allows coming back to initial state with key decisions and progress preserved
+- Reduces token usage while maintaining important context
+- Summary includes: key facts, user preferences, progress, important context, pending actions
+
 **2025-02-11**: Added `/reset` command for conversation history management
 - Type `/reset` to clear all conversation messages except the initial system prompt
 - Restores the assistant to its initialization state while preserving skill context
