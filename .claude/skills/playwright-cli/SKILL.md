@@ -30,7 +30,7 @@ playwright-cli close
 ```bash
 playwright-cli open --headed
 # open and navigate right away
-playwright-cli open https://example.com/
+playwright-cli open --headed https://example.com/
 playwright-cli goto https://playwright.dev
 playwright-cli type "search query"
 playwright-cli click e3
@@ -134,29 +134,6 @@ playwright-cli tracing-start
 playwright-cli tracing-stop
 playwright-cli video-start
 playwright-cli video-stop
-```
-
-## Configuration
-
-### Default Options
-
-This skill is configured with default options to provide a better experience:
-
-```yaml
-default-options:
-  open: --headed
-```
-
-This means `playwright-cli open` will always start in **headed mode** (visible browser window), making it easy to see what's happening during automation.
-
-You can still override these defaults by explicitly passing different flags:
-
-```bash
-# Override default and run headless
-playwright-cli open --headless
-
-# Override with a different browser
-playwright-cli open --browser=firefox
 ```
 
 ### Available Options for `open`
