@@ -131,28 +131,36 @@ def cli():
                         print(f"\n{border}\n")
                     case "tool_call":
                         tool_call = stream.collect()
-                        
+
                         # Handle clarify tool specially - prompt user for input
                         if tool_call.name == "clarify":
-                            question = tool_call.args.get("question", "Clarifying question?")
+                            # Parse args if it's a JSON string
+                            args = tool_call.args
+                            if isinstance(args, str):
+                                args = json.loads(args)
+                            question = args.get("question", "Clarifying question?")
                             print(f"\n❓ CLARIFYING QUESTION:")
                             print(f"{question}")
                             print()
                             try:
                                 user_response = multiline_input("Your answer: ")
                                 clarify_responses.append(
-                                    llm.tool_output(tool_call.id, f"User response: {user_response}")
+                                    llm.ToolOutput(id=tool_call.id, name=tool_call.name, result=f"User response: {user_response}")
                                 )
                             except (EOFError, KeyboardInterrupt):
                                 print("\nClarification cancelled.")
                                 clarify_responses.append(
-                                    llm.tool_output(tool_call.id, "Clarification cancelled by user.")
+                                    llm.ToolOutput(id=tool_call.id, name=tool_call.name, result="Clarification cancelled by user.")
                                 )
                         else:
                             # Print other tool calls normally
                             border = "=" * 80
                             tool_header = f"🛠️  TOOL CALL: {tool_call.name}"
-                            tool_args = json.dumps(tool_call.args, indent=2, ensure_ascii=False)
+                            # Parse args if it's a JSON string
+                            args = tool_call.args
+                            if isinstance(args, str):
+                                args = json.loads(args)
+                            tool_args = json.dumps(args, indent=2, ensure_ascii=False)
                             print(f"\n{border}")
                             print(f"{tool_header}")
                             print(f"Args:")
