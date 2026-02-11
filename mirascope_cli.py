@@ -10,23 +10,21 @@ from src.tools.file_edit import file_edit
 from src.tools.execute_bash import execute_bash
 from src.multiline_input import multiline_input
 from src.tools.plan import plan
+from src.tools.browse_internet import browse_internet
 
 os.environ['OPENAI_API_KEY'] = "sk-010101"
-os.environ['OPENAI_API_BASE'] = "http://localhost:5000/v1"  # Point to the local vLLM server
+os.environ['OPENAI_API_BASE'] = "http://localhost:5000/v1"
 
 llm.register_provider(
     "openai:completions",
     scope="vllm/",
     base_url="http://localhost:5000/v1",
-    api_key="vllm",  # required by client but unused
+    api_key="vllm",
 )
 
 model = llm.Model(
     "vllm/vllm",
-    # temperature=0.2,
     max_tokens=8196,
-    # top_p=0.95,
-    # top_k=20,
     thinking={"level": "high", "include_thoughts": True}
 )
 
@@ -45,13 +43,13 @@ def load_claude_md() -> str:
 
 def cli():
     """Main CLI loop for the assistant."""
-    # Build system prompt with optional CLAUDE.md
     system_prompt = load_base_prompt() + load_claude_md()
     
     print("Welcome to the Custom CLI Assistant! Type your commands below.")
     print("  - Press Alt + Enter for new lines")
     print("  - Press Enter to submit")
     print("  - Press Ctrl+C to cancel input")
+    print("  - Type '/quit', '/exit', or '/q' to exit")
     print()
 
     messages = [
@@ -68,7 +66,7 @@ def cli():
         if not user_input:
             continue
         
-        if user_input.lower() in ['quit', 'exit', 'q']:
+        if user_input.lower().strip() in ['/quit', '/exit', '/q']:
             print("Goodbye!")
             break
         
@@ -81,7 +79,8 @@ def cli():
                 file_read,
                 file_edit,
                 execute_bash,
-                plan
+                plan,
+                browse_internet,
             ],
         )
 
@@ -112,7 +111,7 @@ def cli():
                         print(f"{border}\n")
 
             if not response.tool_calls:
-                break  # Agent is finished.
+                break
 
             response = response.resume(response.execute_tools())
         
