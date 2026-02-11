@@ -75,6 +75,7 @@ def cli():
     print("  - Press Enter to submit")
     print("  - Press Ctrl+C to cancel input")
     print("  - Type '/quit', '/exit', or '/q' to exit")
+    print("  - Type '/reset' to clear conversation history and restart")
     print()
 
     messages = [
@@ -95,6 +96,13 @@ def cli():
             print("Goodbye!")
             break
 
+
+        if user_input.lower().strip() == '/reset':
+            print("\n🔄 Conversation history cleared. Restarting with initial configuration...\n")
+            messages = [
+                llm.messages.system(system_prompt),
+            ]
+            continue
         messages.append(llm.messages.user(user_input))
 
         response = model.stream(

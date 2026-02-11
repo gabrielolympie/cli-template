@@ -17,6 +17,11 @@ This file serves as persistent memory for the agent. It stores:
 
 ### System Updates
 
+**2025-02-11**: Added `/reset` command for conversation history management
+- Type `/reset` to clear all conversation messages except the initial system prompt
+- Restores the assistant to its initialization state while preserving skill context
+- Useful for starting fresh conversations or troubleshooting context issues
+
 **2024-02-11**: Added clarify tool for asking clarifying questions
 - Added `clarify(question)` tool as a dedicated capability
 - Updated system prompt to emphasize asking questions before important decisions
