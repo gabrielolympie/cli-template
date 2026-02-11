@@ -6,8 +6,8 @@ def multiline_input(prompt: str = "> ") -> str:
     Multiline input function using prompt_toolkit.
     
     Supports:
-    - Enter: submits the input
-    - Shift+Enter: adds a newline at cursor position
+    - Enter: adds a newline (continue typing)
+    - Alt+Enter (or Escape then Enter): submits the input
     - Ctrl+C: cancels input (returns empty string)
     
     Args:
@@ -19,29 +19,23 @@ def multiline_input(prompt: str = "> ") -> str:
     try:
         from prompt_toolkit import PromptSession
         from prompt_toolkit.key_binding import KeyBindings
-        
+
         bindings = KeyBindings()
-        session = PromptSession(key_bindings=bindings)
-        
-        @bindings.add('enter')
+        session = PromptSession(key_bindings=bindings, multiline=True)
+
+        @bindings.add('escape', 'enter')
         def submit(event):
-            """Submit on Enter key."""
+            """Submit on Alt+Enter (or Escape then Enter)."""
             buffer = event.current_buffer
             buffer.validate_and_handle()
-        
+
         @bindings.add('c-c')
         def cancel(event):
             """Cancel input with Ctrl+C."""
             buffer = event.current_buffer
             buffer.text = ""
             buffer.validate_and_handle()
-        
-        @bindings.add('shift-enter')
-        def insert_newline(event):
-            """Insert newline at cursor position on Shift+Enter."""
-            buffer = event.current_buffer
-            buffer.insert_text('\n')
-        
+
         while True:
             try:
                 result = session.prompt(prompt)
@@ -49,13 +43,13 @@ def multiline_input(prompt: str = "> ") -> str:
             except KeyboardInterrupt:
                 print("\n(input cancelled)")
                 return ""
-                
+
     except ImportError:
         # Fallback to standard input with instructions
         print(f"{prompt} (prompt_toolkit not installed - using basic input)")
         print("  - Type your input, press Enter for new lines")
         print("  - Press Ctrl+D (or Ctrl+Z on Windows) to submit")
-        
+
         lines = []
         try:
             while True:
@@ -66,5 +60,5 @@ def multiline_input(prompt: str = "> ") -> str:
         except KeyboardInterrupt:
             print("\n")
             return ""
-        
+
         return "\n".join(lines)
