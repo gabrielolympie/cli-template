@@ -14,26 +14,26 @@ command_exists() {
 }
 
 # Check for Python
-if ! command_exists python3; then
-    echo "Error: Python 3 is not installed"
+if ! command_exists python; then
+    echo "Error: Python is not installed"
     exit 1
 fi
 
-echo "✓ Python 3 found: $(python3 --version)"
+echo "✓ Python found: $(python --version)"
 
 # Check for pip
-if ! command_exists pip3; then
-    echo "Error: pip3 is not installed"
+if ! command_exists pip; then
+    echo "Error: pip is not installed"
     exit 1
 fi
 
-echo "✓ pip3 found"
+echo "✓ pip found"
 
 # Create virtual environment if it doesn't exist
 if [ ! -d "venv" ]; then
     echo ""
     echo "Creating virtual environment..."
-    python3 -m venv venv
+    python -m venv venv
 fi
 
 # Activate virtual environment
