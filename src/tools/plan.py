@@ -24,7 +24,7 @@ TASK: {task}
 
 CURRENT CONTEXT: {current_context if current_context else "No specific context provided."}
 
-AVAILABLE TOOLS/CAPABILITIES: {available_tools if available_tools else "File operations (create, read, edit), bash execution, git operations, state management."}
+AVAILABLE TOOLS/CAPABILITIES: {available_tools if available_tools else "File operations (create, read, edit), bash execution, git operations, planning."}
 
 Please analyze this task and create a comprehensive plan that:
 1. Breaks down the task into specific, actionable steps
@@ -68,7 +68,7 @@ def plan(task: str, current_context: str = "", available_tools: str = "") -> str
         prompt = prompt_template.format(
             task=task,
             current_context=current_context,
-            available_tools=available_tools if available_tools else "File operations (create, read, edit), bash execution, git operations, state management."
+            available_tools=available_tools if available_tools else "File operations (create, read, edit), bash execution, git operations, planning."
         )
 
         # Use the main model to generate the plan

@@ -42,17 +42,12 @@ os.environ['OPENAI_API_BASE'] = "http://localhost:5000/v1"
 
 - **File operations** (create/read/edit)
 - **Bash execution** (60s timeout)
-- **Session persistence** (save/restore state)
-- **Context compaction** (for long sessions)
 - **Planning tool** (task breakdown)
-- **Self-improvement** (can create new tools dynamically)
 
 ## Available Tools
 
 **File**: `file_create`, `file_read`, `file_edit`  
 **Bash**: `execute_bash`  
-**State**: `set_restart_state`, `get_restart_state`, `clear_restart_state`, `restart_cli`  
-**Context**: `compact_state`, `get_compact_state`, `clear_compact_state`  
 **Planning**: `plan`
 
 ## Configuration

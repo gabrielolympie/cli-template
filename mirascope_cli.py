@@ -8,8 +8,6 @@ from src.tools.file_create import file_create
 from src.tools.file_read import file_read
 from src.tools.file_edit import file_edit
 from src.tools.execute_bash import execute_bash
-from src.tools.compact_state import compact_state, get_compact_state, clear_compact_state, COMPACT_STATE_FILE
-from src.tools.restart_cli import restart_cli, STATE_FILE
 from src.tools.plan import plan
 
 os.environ['OPENAI_API_KEY'] = "sk-010101"
@@ -36,7 +34,6 @@ def load_base_prompt(prompt_path: str = "prompts/cli.md") -> str:
     with open(prompt_path, "r", encoding="utf-8") as f:
         return f.read()
 
-
 def load_claude_md() -> str:
     """Load CLAUDE.md if present at the project root."""
     claude_path = os.path.join(os.getcwd(), "CLAUDE.md")
@@ -44,10 +41,6 @@ def load_claude_md() -> str:
         with open(claude_path, "r", encoding="utf-8") as f:
             return f"\n\n## ADDITIONAL PROJECT GUIDANCE\n{f.read()}"
     return ""
-
-
-
-
 
 def cli():
     """Main CLI loop for the assistant."""
@@ -80,10 +73,6 @@ def cli():
                 file_read,
                 file_edit,
                 execute_bash,
-                restart_cli,
-                compact_state,
-                get_compact_state,
-                clear_compact_state,
                 plan
             ],
         )
