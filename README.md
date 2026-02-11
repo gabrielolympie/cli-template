@@ -43,12 +43,14 @@ os.environ['OPENAI_API_BASE'] = "http://localhost:5000/v1"
 - **File operations** (create/read/edit)
 - **Bash execution** (60s timeout)
 - **Planning tool** (task breakdown)
+- **Skill system** (modular capability expansion)
 
 ## Available Tools
 
 **File**: `file_create`, `file_read`, `file_edit`  
 **Bash**: `execute_bash`  
-**Planning**: `plan`
+**Planning**: `plan`  
+**Skills**: `list_skills()`, `get_skill_info()`, `skill_search()`
 
 ## Configuration
 
@@ -81,11 +83,21 @@ def my_new_tool(param: str) -> str:
 mirascope_cli.py        # Main entry point
 prompts/
   system.md             # System prompt
-  plan.md               # Planning template
 src/tools/              # Tool definitions
 src/skills/             # Skill management system
 .claude/skills/         # User-created skills
 ```
+
+## Skill System
+
+The skill management system has been directly derived from the one used in [Claude Code](https://github.com/anthropics/claude-code). This system allows extending the CLI's capabilities through modular skills that define new tools and workflows.
+
+Skills are loaded from `.claude/skills/` and enable:
+- Modular capability expansion via skill packages
+- CLI tool exposure through YAML frontmatter configuration
+- Automatic skill discovery and documentation
+
+See the `skill-doc` skill for complete documentation on writing new skills.
 
 ## License
 
