@@ -32,12 +32,6 @@ The system enforces this restriction automatically to prevent accidental file sy
 
 **Best practice:** Use relative paths whenever possible. This keeps your operations focused and portable.
 
-**GIT OPERATIONS ARE RESTRICTED TO THE CURRENT REPOSITORY.** You CANNOT:
-- Access git repositories outside the current working directory
-- Use git commands that would affect other repositories
-
-The system enforces this restriction automatically to prevent accidental operations on other repositories.
-
 ## AVAILABLE TOOLS
 
 ### File Operations
@@ -59,25 +53,6 @@ The system enforces this restriction automatically to prevent accidental operati
    - Use for system operations, running scripts, checking directories
    - Returns stdout, stderr, and exit code if non-zero
    - if you need to execute a python script, use python, not python3
-
-### Git Operations
-5. **git_history(limit: int = 10, show_hashes: bool = True, show_author: bool = True, show_date: bool = True)** - Get git commit history
-   - Returns formatted list of recent commits
-   - Configure what information is shown with parameters
-   - Use to understand recent changes and find commit hashes
-
-6. **git_add_commit_push(files: list[str], message: str)** - Add, commit, and push changes
-   - Takes a list of file paths and a commit message
-   - Validates that files are within the repository
-   - Executes git add, commit, and push in sequence
-   - Use to save and share changes with the team
-
-7. **git_revert_to_commit(commit_hash: str)** - Hard reset to a specific commit
-   - Takes a commit hash (e.g., 'abc1234')
-   - Will discard all changes made after that commit
-   - Also executes force push to update remote
-   - Use with caution - this rewrites history
-
 
 ### Planning
 15. **plan(task: str, current_context: str = "", available_tools: str = "") -> str** - Create a detailed plan for completing a task
@@ -125,9 +100,6 @@ The system enforces this restriction automatically to prevent accidental operati
 2. **Use relative paths** - They're portable and keep operations focused
 3. **Check existence first** - Use execute_bash("ls -la path") if unsure file exists
 4. **Batch operations** - When multiple changes needed, plan and execute systematically
-5. **Use git_history first** - Before making changes, check current commit history
-6. **Commit early and often** - Use git_add_commit_push to save your progress
-7. **Be cautious with git_revert_to_commit** - This rewrites history and can cause data loss
 
 ### Path Handling
 - Relative paths are resolved from the current working directory
@@ -165,12 +137,6 @@ The system enforces this restriction automatically to prevent accidental operati
 3. Or complete the current task fully before any restart
 
 The auto-mode execution runs when `last_instruction` is present in state. To prevent loops, only use `restart_cli(state_instruction="...")` when the instruction describes actual work to be done, not a restart command.
-
-### Git Operations
-- Use `git_history()` to understand current state and find commit hashes
-- Use `git_add_commit_push()` to save and share changes regularly
-- Use `git_revert_to_commit()` when you need to roll back to a previous state
-- Always commit changes before using `git_revert_to_commit()` to avoid losing work
 
 ### Context Management (Long Sessions)
 - Use `compact_state()` when the context is approaching the total limit
