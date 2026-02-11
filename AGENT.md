@@ -17,6 +17,12 @@ This file serves as persistent memory for the agent. It stores:
 
 ### System Updates
 
+**2024-02-11**: Added clarify tool for asking clarifying questions
+- Added `clarify(question)` tool as a dedicated capability
+- Updated system prompt to emphasize asking questions before important decisions
+- CLI loop handles clarify tool by prompting user for input via multiline_input
+- Tool execution pauses until user provides response
+
 **2024-02-11**: Added skill management system
 - Skill loading from `.claude/skills/` directory
 - Automatic skill inventory in system prompt

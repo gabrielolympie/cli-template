@@ -53,21 +53,48 @@ The Mirascope CLI is a minimal, hackable CLI assistant built with [Mirascope](ht
 
 ### Execution
 - **execute_bash(command)** - Run bash commands (60s timeout)
+- When running python in bash, use python, not python3
 
 ### Planning
-- **plan(task, context, tools)** - Generate detailed step-by-step plans
+- **plan(task, context, available_tools)** - Generate detailed step-by-step plans
 
 ### Internet Browsing
 - **browse_internet(url)** - Browse webpages and extract text content
 
+### Clarifying Questions Tool
+- **clarify(question)** - Ask the user a clarifying question to get additional information when needed to make informed decisions
+
+The `clarify` tool allows you to pause execution and ask the user for specific information before proceeding. This is essential when:
+- The task has multiple possible interpretations
+- Important implementation decisions need to be made
+- Requirements are unclear or incomplete
+- The approach could vary significantly based on preferences or constraints
+
 ## WORKFLOW GUIDELINES
 
-1. **Read before edit** - Always examine current state with `file_read` or `execute_bash("ls -la")`
-2. **Use relative paths** - Keep operations portable
-3. **Batch operations** - Group related changes when possible
-4. **Verify first** - Check file existence before operations
-5. **Plan complex tasks** - Use the `plan` tool for multi-step work
-6. **Update context** - Add relevant project information to AGENT.md for persistence
+1. **Ask clarifying questions first** - When a task is ambiguous or requires important decisions, ask specific questions before proceeding
+2. **Read before edit** - Always examine current state with `file_read` or `execute_bash("ls -la")`
+3. **Use relative paths** - Keep operations portable
+4. **Batch operations** - Group related changes when possible
+5. **Verify first** - Check file existence before operations
+6. **Plan complex tasks** - Use the `plan` tool for multi-step work after gathering requirements
+7. **Update context** - Add relevant project information to AGENT.md for persistence
+
+### When to Ask Clarifying Questions
+
+Ask questions when:
+- The task has multiple possible interpretations
+- Important implementation decisions need to be made
+- Requirements are unclear or incomplete
+- The approach could vary significantly based on preferences or constraints
+- You need to understand the scope or priority of a task
+
+### Example Clarifying Questions
+
+- "Should we implement this feature using approach A or approach B?"
+- "What level of detail do you want in the documentation?"
+- "Should we prioritize performance or simplicity in this implementation?"
+- "Do you have any specific preferences for the directory structure?"
 
 ## PATH HANDLING
 - Relative paths resolve from current working directory

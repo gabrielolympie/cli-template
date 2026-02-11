@@ -11,6 +11,7 @@ from src.tools.execute_bash import execute_bash
 from src.multiline_input import multiline_input
 from src.tools.plan import plan
 from src.tools.browse_internet import browse_internet
+from src.tools.clarify import clarify
 
 # Skill Management
 from src.skills.manager import get_skill_manager, SkillManager
@@ -105,11 +106,15 @@ def cli():
                 execute_bash,
                 plan,
                 browse_internet,
+                clarify,
                 # Skill tools will be added dynamically
             ],
         )
 
         while True:  # The Agent Loop
+            # Process tool calls
+            clarify_responses = []  # Collect clarify tool responses
+            
             for stream in response.streams():
                 match stream.content_type:
                     case "text":
@@ -126,19 +131,44 @@ def cli():
                         print(f"\n{border}\n")
                     case "tool_call":
                         tool_call = stream.collect()
-                        border = "=" * 80
-                        tool_header = f"🛠️  TOOL CALL: {tool_call.name}"
-                        tool_args = json.dumps(tool_call.args, indent=2, ensure_ascii=False)
-                        print(f"\n{border}")
-                        print(f"{tool_header}")
-                        print(f"Args:")
-                        print(f"{tool_args}")
-                        print(f"{border}\n")
+                        
+                        # Handle clarify tool specially - prompt user for input
+                        if tool_call.name == "clarify":
+                            question = tool_call.args.get("question", "Clarifying question?")
+                            print(f"\n❓ CLARIFYING QUESTION:")
+                            print(f"{question}")
+                            print()
+                            try:
+                                user_response = multiline_input("Your answer: ")
+                                clarify_responses.append(
+                                    llm.tool_output(tool_call.id, f"User response: {user_response}")
+                                )
+                            except (EOFError, KeyboardInterrupt):
+                                print("\nClarification cancelled.")
+                                clarify_responses.append(
+                                    llm.tool_output(tool_call.id, "Clarification cancelled by user.")
+                                )
+                        else:
+                            # Print other tool calls normally
+                            border = "=" * 80
+                            tool_header = f"🛠️  TOOL CALL: {tool_call.name}"
+                            tool_args = json.dumps(tool_call.args, indent=2, ensure_ascii=False)
+                            print(f"\n{border}")
+                            print(f"{tool_header}")
+                            print(f"Args:")
+                            print(f"{tool_args}")
+                            print(f"{border}\n")
 
-            if not response.tool_calls:
+            # Execute clarify responses if any
+            if clarify_responses:
+                response = response.resume(clarify_responses)
+                continue  # Continue the loop with the clarified response
+            
+            # Check if there are any tool calls to execute
+            if response.tool_calls:
+                response = response.resume(response.execute_tools())
+            else:
                 break
-
-            response = response.resume(response.execute_tools())
         
         messages = response.messages
 
