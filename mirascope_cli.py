@@ -99,6 +99,34 @@ def load_base_prompt(prompt_path: str = "prompts/system.md") -> str:
     with open(prompt_path, "r", encoding="utf-8") as f:
         return f.read()
 
+def load_model_config_section(config: dict) -> str:
+    """Generate a model configuration section for the system prompt."""
+    llm_config = config.get("llm", {})
+    
+    model_name = llm_config.get("model_name", "Unknown")
+    provider = llm_config.get("provider", "Unknown")
+    max_completion_tokens = llm_config.get("max_completion_tokens", "Unknown")
+    context_size = llm_config.get("context_size", "Unknown")
+    support_image = llm_config.get("support_image", False)
+    support_audio_input = llm_config.get("support_audio_input", False)
+    support_audio_output = llm_config.get("support_audio_output", False)
+    
+    return f"""
+## MODEL CONFIGURATION
+
+Your LLM configuration:
+- **Model**: {model_name}
+- **Provider**: {provider}
+- **Max completion tokens**: {max_completion_tokens}
+- **Context window size**: {context_size} tokens
+- **Supports images**: {support_image}
+- **Supports audio input**: {support_audio_input}
+- **Supports audio output**: {support_audio_output}
+
+Use this information to understand your capabilities and limitations.
+""".strip()
+
+
 def load_claude_md() -> str:
     """Load CLAUDE.md if present at the project root."""
     claude_path = os.path.join(os.getcwd(), "CLAUDE.md")
@@ -114,7 +142,7 @@ def cli():
     claude_md = load_claude_md()
 
     # Build system prompt with all components
-    system_prompt = base_prompt + claude_md
+    system_prompt = base_prompt + claude_md + "\n\n" + load_model_config_section(config)
 
     # Add skill inventory if available
     if skill_inventory:
