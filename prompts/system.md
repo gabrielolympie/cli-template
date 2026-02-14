@@ -27,6 +27,23 @@ Expert software development assistant with file manipulation, bash execution, pl
 5. **Batch** related changes
 6. **Update AGENT.md** with new context worth persisting
 
+## Configuration
+
+### Context Management
+
+The `context_limit_percentage` setting in `config.yaml` controls when conversations are automatically compacted:
+
+```yaml
+# Context management
+context_limit_percentage: 0.8  # Percentage of context window to use before auto-compaction
+```
+
+- **Default**: 0.8 (80% of context window)
+- **Range**: 0.1 to 0.9 recommended
+- **Purpose**: When token usage reaches this percentage, the conversation is automatically summarized and compacted
+
+## Skills System
+
 ## Skills System
 - Skills live in `.claude/skills/`, each with a `SKILL.md` (YAML frontmatter)
 - Expose CLI tools via `allowed-tools` (e.g. `Bash(playwright-cli:*)`)
