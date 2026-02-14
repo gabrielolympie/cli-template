@@ -69,7 +69,7 @@ playwright-cli --help
 # Initialize the skill system
 echo ""
 echo "Initializing skill system..."
-python -c "from src.skills.manager import get_skill_manager; get_skill_manager().load_skills()"
+python -c "from src.utils.skills.manager import get_skill_manager; get_skill_manager().load_skills()"
 
 echo ""
 echo "============================================"

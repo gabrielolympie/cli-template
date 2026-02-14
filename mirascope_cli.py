@@ -14,7 +14,7 @@ from src.tools.file_read import file_read
 from src.tools.file_edit import file_edit
 from src.tools.execute_bash import execute_bash
 from src.tools.screenshot import screenshot
-from src.multiline_input import multiline_input
+from src.utils.multiline_input import multiline_input
 from src.tools.plan import plan
 from src.tools.summarize_conversation import summarize_conversation, generate_conversation_summary
 from src.tools.browse_internet import browse_internet
@@ -22,7 +22,7 @@ from src.tools.estimate_tokens import estimate_tokens_from_messages, format_toke
 from src.tools.clarify import clarify
 
 # Skill Management
-from src.skills.manager import get_skill_manager, SkillManager
+from src.utils.skills.manager import get_skill_manager, SkillManager
 
 # Initialize skill manager on startup
 skill_manager: SkillManager = get_skill_manager()
@@ -129,10 +129,32 @@ config = load_config()
 setup_provider_from_config(config)
 model = create_model_from_config(config)
 
-def load_base_prompt(prompt_path: str = "prompts/system.md") -> str:
-    """Load the system prompt from prompts/system.md."""
-    with open(prompt_path, "r", encoding="utf-8") as f:
-        return f.read()
+def load_prompt(prompt_path: str) -> str:
+    """Load a single prompt file. Returns empty string if file doesn't exist."""
+    if os.path.exists(prompt_path):
+        with open(prompt_path, "r", encoding="utf-8") as f:
+            return f.read()
+    return ""
+
+def load_base_prompt() -> str:
+    """Load and integrate PERSONA.md, AGENT.md, and SYSTEM.md into the system prompt."""
+    prompts_dir = "prompts"
+
+    # Load all three prompt components
+    persona = load_prompt(os.path.join(prompts_dir, "PERSONA.md"))
+    agent = load_prompt(os.path.join(prompts_dir, "AGENT.md"))
+    system = load_prompt(os.path.join(prompts_dir, "SYSTEM.md"))
+
+    # Integrate all prompts into a single system prompt
+    parts = []
+    if persona:
+        parts.append(f"## PERSONA\n{persona}")
+    if agent:
+        parts.append(f"## AGENT MEMORY\n{agent}")
+    if system:
+        parts.append(system)
+
+    return "\n\n".join(parts)
 
 def load_model_config_section(config: dict) -> str:
     """Generate a model configuration section for the system prompt."""
@@ -172,7 +194,7 @@ def load_claude_md() -> str:
 
 def cli():
     """Main CLI loop for the assistant."""
-    # Load base prompt and skill information
+    # Load base prompt (includes PERSONA, AGENT, and SYSTEM)
     base_prompt = load_base_prompt()
     claude_md = load_claude_md()
 

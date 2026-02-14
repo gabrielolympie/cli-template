@@ -32,3 +32,10 @@ Thumbs.db
 
 # Screenshots
 screenshots/
+
+# Norebooks
+.ipynb_checkpoints/
+*.ipynb
+
+# Temp files
+*tmp*
