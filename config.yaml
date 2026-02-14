@@ -61,6 +61,9 @@ skills:
 # Other settings
 debug: false
 
+# Context management
+context_limit_percentage: 0.8  # Percentage of context window to use before auto-compaction
+
 # ====== Provider Examples ======
 #
 # Native Mirascope providers (no api_base needed):

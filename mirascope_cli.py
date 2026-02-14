@@ -122,13 +122,80 @@ def cli() -> None:
         llm.messages.system(system_prompt),
     ]
 
+    # Track conversation length and auto-compact when approaching context limit
+    CONTEXT_WINDOW_SIZE = config["llm"]["context_size"]
+    CONTEXT_LIMIT_PERCENTAGE = config.get("context_limit_percentage", 0.8)
+    CONTEXT_LIMIT = int(CONTEXT_WINDOW_SIZE * CONTEXT_LIMIT_PERCENTAGE)
+    
+    def should_auto_compact(messages):
+        """Check if conversation should be auto-compacted."""
+        try:
+            token_count = estimate_tokens_from_messages(messages)
+            return token_count >= CONTEXT_LIMIT
+        except Exception:
+            # If estimation fails, don't compact
+            return False
+    
+    def auto_compact_conversation(messages, system_prompt):
+        """Auto-compact conversation and return new message history."""
+        print(f"\n🔄 Auto-compacting conversation (approaching context limit)...")
+        summary = generate_conversation_summary(messages)
+        print("📝 Conversation summary:")
+        print(summary)
+        print()
+        
+        return [
+            llm.messages.system(system_prompt),
+            llm.messages.user(
+                f"Previous conversation auto-compacted. Here's a summary of what we've discussed so far:\n\n{summary}\n\nYou can now continue the conversation from this point."
+            ),
+        ]
+
+    messages = [
+        llm.messages.system(system_prompt),
+    ]
     while True:
         try:
             user_input = multiline_input("> ")
         except (EOFError, KeyboardInterrupt):
             print("\nGoodbye!")
             break
+        
+        if not user_input:
+            continue
 
+        # ------------------------------------------------------------------- #
+        # Command handling
+        if user_input.lower().strip() in ["/quit", "/exit", "/q"]:
+            print("Goodbye!")
+            break
+
+        if user_input.lower().strip() == "/reset":
+            print("\n🔄 Conversation history cleared. Restarting with initial configuration...\n")
+            messages = [llm.messages.system(system_prompt)]
+            continue
+
+        if user_input.lower().strip() == "/compact":
+            print("\n🔄 Compacting conversation history...\n")
+            summary = generate_conversation_summary(messages)
+            print("📝 Conversation summary:")
+            print(summary)
+            print()
+            messages = [
+                llm.messages.system(system_prompt),
+                llm.messages.user(
+                    f"Previous conversation compacted. Here's a summary of what we've discussed so far:\n\n{summary}\n\nYou can now continue the conversation from this point."
+                ),
+            ]
+            print("✅ Conversation compacted and history cleared.\n")
+            continue
+        # ------------------------------------------------------------------- #
+
+        # Auto-compact if conversation is too long
+        if should_auto_compact(messages):
+            messages = auto_compact_conversation(messages, system_prompt)
+        
+        messages.append(llm.messages.user(user_input))
         if not user_input:
             continue
 
@@ -235,7 +302,12 @@ def cli() -> None:
                 print("\n\n⚠️  Generation interrupted by user.\n")
 
             # --------------------------------------------------------------- #
-            # If the user interrupted, preserve whatever partial context we have
+                # Auto-compact if conversation is too long before resuming
+                if should_auto_compact(messages):
+                    messages = auto_compact_conversation(messages, system_prompt)
+                
+                # Resume the LLM with the (possibly image‑enhanced) tool outputs
+                response = response.resume(tool_outputs + loaded_images)
             if interrupted:
                 try:
                     messages = response.messages
