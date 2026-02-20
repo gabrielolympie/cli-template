@@ -52,6 +52,17 @@ source venv/bin/activate
 echo "Upgrading pip..."
 pip install --upgrade pip
 
+# Install system dependencies for audio (WSL needs ALSA-PulseAudio bridge)
+echo ""
+echo "Installing system audio dependencies..."
+if grep -qi microsoft /proc/version 2>/dev/null; then
+    echo "  WSL detected - installing libasound2-plugins for PulseAudio bridge..."
+    sudo apt-get install -y libportaudio2 libasound2-plugins
+else
+    echo "  Native Linux detected - installing libportaudio2..."
+    sudo apt-get install -y libportaudio2
+fi
+
 # Install Python dependencies
 echo ""
 echo "Installing Python dependencies from requirements.txt..."

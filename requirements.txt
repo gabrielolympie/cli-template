@@ -8,8 +8,8 @@ mss>=9.0.0
 python-dotenv>=1.0.0
 
 # Voice output dependencies (optional - only needed for /voice mode)
-sounddevice>=0.4.6           # Speaker output (requires libportaudio2 system package)
+sounddevice>=0.4.6           # Speaker output (requires libportaudio2 + libasound2-plugins on WSL)
 numpy>=1.24                  # Audio array manipulation
 pocket-tts>=0.1              # Kyutai Pocket TTS - local, CPU-only (recommended)
-# pyttsx3>=2.90              # Fallback local TTS (lower quality, no model download)
-# openai>=1.0                # OpenAI TTS API (cloud alternative)
+pyttsx3>=2.90              # Fallback local TTS (lower quality, no model download)
+openai>=1.0                # OpenAI TTS API (cloud alternative)
