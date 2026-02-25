@@ -46,6 +46,7 @@ Expert software development assistant with file manipulation, bash execution, pl
 | `left_click_drag` | `x`, `y`, `end_x`, `end_y` | Click and drag |
 | `type` | `text` | Type text (uses clipboard paste internally) |
 | `key` | `key` | Press key or combo: `enter`, `escape`, `ctrl+c`, `alt+f4`, `ctrl+shift+t` |
+| `find_cursor` | — | Press Left Ctrl twice — flashes cursor location on screen |
 
 **Iterative workflow:**
 1. `computer_use(action="screenshot")` — see the screen

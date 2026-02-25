@@ -259,6 +259,30 @@ Write-Host "OK"
     return f"Pressed key: {key}"
 
 
+def _wsl_find_cursor() -> str:
+    """Press Left Ctrl twice via keybd_event to trigger the Windows cursor-locator animation."""
+    # VK_LCONTROL = 0xA2 ; KEYEVENTF_KEYUP = 0x0002
+    # Using keybd_event (not SendKeys) because SendKeys cannot press a modifier key alone.
+    script = r"""
+Add-Type @"
+using System;
+using System.Runtime.InteropServices;
+public class KeyHelper {
+    [DllImport("user32.dll")]
+    public static extern void keybd_event(byte bVk, byte bScan, int dwFlags, IntPtr dwExtraInfo);
+}
+"@
+[KeyHelper]::keybd_event(0xA2, 0, 0, [IntPtr]::Zero)
+[KeyHelper]::keybd_event(0xA2, 0, 2, [IntPtr]::Zero)
+Start-Sleep -Milliseconds 100
+[KeyHelper]::keybd_event(0xA2, 0, 0, [IntPtr]::Zero)
+[KeyHelper]::keybd_event(0xA2, 0, 2, [IntPtr]::Zero)
+Write-Host "OK"
+"""
+    _run_powershell(script)
+    return "Pressed Left Ctrl twice — cursor location animation triggered"
+
+
 # ---------------------------------------------------------------------------
 # Non-WSL helpers (pyautogui)
 # ---------------------------------------------------------------------------
@@ -315,6 +339,17 @@ def _other_key(key: str) -> str:
     return f"Pressed key: {key}"
 
 
+def _other_find_cursor() -> str:
+    import time
+    pg = _get_pyautogui()
+    pg.keyDown('ctrl')
+    pg.keyUp('ctrl')
+    time.sleep(0.1)
+    pg.keyDown('ctrl')
+    pg.keyUp('ctrl')
+    return "Pressed Left Ctrl twice — cursor location animation triggered"
+
+
 # ---------------------------------------------------------------------------
 # Main tool
 # ---------------------------------------------------------------------------
@@ -325,9 +360,11 @@ def computer_use(
         description=(
             "Action to perform. One of: "
             "screenshot | mouse_move | left_click | right_click | double_click | "
-            "middle_click | scroll | left_click_drag | type | key. "
+            "middle_click | scroll | left_click_drag | type | key | find_cursor. "
             "Always call 'screenshot' first to see the current screen state before "
-            "performing other actions."
+            "performing other actions. "
+            "Use 'find_cursor' to press Left Ctrl twice and trigger the Windows "
+            "cursor-location animation, making the current mouse position easy to spot."
         )
     ),
     x: int | None = Field(default=None, description="X coordinate in pixels (required for all mouse actions)"),
@@ -443,11 +480,14 @@ def computer_use(
                     return "Error: key is required for key action"
                 return _wsl_key(key) if is_wsl else _other_key(key)
 
+            case "find_cursor":
+                return _wsl_find_cursor() if is_wsl else _other_find_cursor()
+
             case _:
                 return (
                     f"Unknown action: '{action}'. Valid actions: screenshot, mouse_move, "
                     "left_click, right_click, double_click, middle_click, scroll, "
-                    "left_click_drag, type, key"
+                    "left_click_drag, type, key, find_cursor"
                 )
 
     except Exception as e:

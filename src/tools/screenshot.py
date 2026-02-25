@@ -116,25 +116,58 @@ def _get_logical_screen_size(os_type: str, fallback_w: int, fallback_h: int) -> 
     For example, a 2560×1600 display at 150 % scaling has logical size 1707×1067.
     Grid labels must show logical coords so the agent can use them directly.
 
+    IMPORTANT: We must NOT load System.Windows.Forms here. In .NET 4.7+ WinForms
+    auto-enables per-monitor DPI awareness for its host process, which makes
+    Screen.PrimaryScreen.Bounds return *physical* pixels — the wrong value.
+    Instead we use GetSystemMetrics(SM_CXSCREEN/SM_CYSCREEN) directly via P/Invoke
+    in a DPI-unaware PowerShell process, which always returns logical coordinates
+    matching the SetCursorPos coordinate space.
+
     On other platforms mss captures at the OS-reported (logical) resolution, so
     physical == logical and the fallback is always correct.
     """
     if os_type == "wsl":
+        # Use a temp PS1 file so we can use a here-string for the C# stub.
+        # Do NOT call SetProcessDPIAware() — keeping the process DPI-unaware
+        # is what makes GetSystemMetrics return logical (virtualised) pixels.
+        ps_script = r"""
+Add-Type @"
+using System;
+using System.Runtime.InteropServices;
+public class ScreenMetrics {
+    [DllImport("user32.dll")]
+    public static extern int GetSystemMetrics(int nIndex);
+}
+"@
+$w = [ScreenMetrics]::GetSystemMetrics(0)
+$h = [ScreenMetrics]::GetSystemMetrics(1)
+Write-Output "$w $h"
+"""
         try:
-            powershell_path = "/mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe"
-            cmd = (
-                "Add-Type -AssemblyName System.Windows.Forms; "
-                "$b = [System.Windows.Forms.Screen]::PrimaryScreen.Bounds; "
-                "Write-Output \"$($b.Width) $($b.Height)\""
-            )
-            result = subprocess.run(
-                [powershell_path, "-NoProfile", "-Command", cmd],
-                capture_output=True,
-                timeout=10,
-            )
-            parts = result.stdout.decode("utf-8", errors="ignore").strip().split()
-            if len(parts) == 2:
-                return int(parts[0]), int(parts[1])
+            import uuid as _uuid
+            tmp_dir = os.path.join(PROJECT_ROOT, ".tmp")
+            os.makedirs(tmp_dir, exist_ok=True)
+            ps_path = os.path.join(tmp_dir, f"lsz_{_uuid.uuid4().hex[:8]}.ps1")
+            with open(ps_path, "w", encoding="utf-8") as f:
+                f.write(ps_script)
+            try:
+                ps_win = linux_to_windows_path(ps_path)
+                result = subprocess.run(
+                    [
+                        "/mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe",
+                        "-ExecutionPolicy", "Bypass", "-NoProfile", "-File", ps_win,
+                    ],
+                    capture_output=True,
+                    timeout=10,
+                )
+                parts = result.stdout.decode("utf-8", errors="ignore").strip().split()
+                if len(parts) == 2:
+                    w, h = int(parts[0]), int(parts[1])
+                    if w > 0 and h > 0:
+                        return w, h
+            finally:
+                if os.path.exists(ps_path):
+                    os.unlink(ps_path)
         except Exception:
             pass
     elif MSS_AVAILABLE:
