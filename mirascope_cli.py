@@ -32,6 +32,7 @@ from src.tools.estimate_tokens import (
 )
 from src.tools.clarify import clarify
 from src.tools.speak import speak, configure_speak
+from src.tools.computer_use import computer_use
 
 # Skill Management
 from src.utils.skills.manager import get_skill_manager, SkillManager
@@ -52,6 +53,7 @@ ALL_TOOLS = {
     "clarify": clarify,
     "summarize_conversation": summarize_conversation,
     "speak": speak,
+    "computer_use": computer_use,
 }
 
 
@@ -135,16 +137,19 @@ def cli() -> None:
     CONTEXT_WINDOW_SIZE = config["llm"]["context_size"]
     CONTEXT_LIMIT_PERCENTAGE = config.get("context_limit_percentage", 0.8)
     CONTEXT_LIMIT = int(CONTEXT_WINDOW_SIZE * CONTEXT_LIMIT_PERCENTAGE)
-    
-    def should_auto_compact(messages):
+    last_known_token_count = 0  # Track the most recent accurate token count
+
+    def should_auto_compact():
         """Check if conversation should be auto-compacted."""
+        nonlocal last_known_token_count
+        if last_known_token_count > 0:
+            return last_known_token_count >= CONTEXT_LIMIT
         try:
             token_count = estimate_tokens_from_messages(messages)
             return token_count >= CONTEXT_LIMIT
         except Exception:
-            # If estimation fails, don't compact
             return False
-    
+
     def auto_compact_conversation(messages, system_prompt):
         """Auto-compact conversation and return new message history."""
         print(f"\n🔄 Auto-compacting conversation (approaching context limit)...")
@@ -152,7 +157,7 @@ def cli() -> None:
         print("📝 Conversation summary:")
         print(summary)
         print()
-        
+
         return [
             llm.messages.system(system_prompt),
             llm.messages.user(
@@ -160,16 +165,13 @@ def cli() -> None:
             ),
         ]
 
-    messages = [
-        llm.messages.system(system_prompt),
-    ]
     while True:
         try:
             user_input = multiline_input("> ")
         except (EOFError, KeyboardInterrupt):
             print("\nGoodbye!")
             break
-        
+
         if not user_input:
             continue
 
@@ -182,6 +184,7 @@ def cli() -> None:
         if user_input.lower().strip() == "/reset":
             print("\n🔄 Conversation history cleared. Restarting with initial configuration...\n")
             messages = [llm.messages.system(system_prompt)]
+            last_known_token_count = 0
             continue
 
         if user_input.lower().strip() == "/compact":
@@ -196,6 +199,7 @@ def cli() -> None:
                     f"Previous conversation compacted. Here's a summary of what we've discussed so far:\n\n{summary}\n\nYou can now continue the conversation from this point."
                 ),
             ]
+            last_known_token_count = 0
             print("✅ Conversation compacted and history cleared.\n")
             continue
 
@@ -223,39 +227,9 @@ def cli() -> None:
         # ------------------------------------------------------------------- #
 
         # Auto-compact if conversation is too long
-        if should_auto_compact(messages):
+        if should_auto_compact():
             messages = auto_compact_conversation(messages, system_prompt)
-        
-        messages.append(llm.messages.user(user_input))
-        if not user_input:
-            continue
-
-        # ------------------------------------------------------------------- #
-        # Command handling
-        if user_input.lower().strip() in ["/quit", "/exit", "/q"]:
-            print("Goodbye!")
-            break
-
-        if user_input.lower().strip() == "/reset":
-            print("\n🔄 Conversation history cleared. Restarting with initial configuration...\n")
-            messages = [llm.messages.system(system_prompt)]
-            continue
-
-        if user_input.lower().strip() == "/compact":
-            print("\n🔄 Compacting conversation history...\n")
-            summary = generate_conversation_summary(messages)
-            print("📝 Conversation summary:")
-            print(summary)
-            print()
-            messages = [
-                llm.messages.system(system_prompt),
-                llm.messages.user(
-                    f"Previous conversation compacted. Here's a summary of what we've discussed so far:\n\n{summary}\n\nYou can now continue the conversation from this point."
-                ),
-            ]
-            print("✅ Conversation compacted and history cleared.\n")
-            continue
-        # ------------------------------------------------------------------- #
+            last_known_token_count = 0
 
         messages.append(llm.messages.user(user_input))
 
@@ -340,20 +314,6 @@ def cli() -> None:
                 print("\n\n⚠️  Generation interrupted by user.\n")
 
             # --------------------------------------------------------------- #
-                # Auto-compact if conversation is too long before resuming
-                if should_auto_compact(messages):
-                    messages = auto_compact_conversation(messages, system_prompt)
-                
-                # Resume the LLM with the (possibly image‑enhanced) tool outputs
-                response = response.resume(tool_outputs + loaded_images)
-            if interrupted:
-                try:
-                    messages = response.messages
-                except Exception:
-                    messages.append(llm.messages.assistant("[Response interrupted by user]"))
-                break
-
-            # --------------------------------------------------------------- #
             # If we collected clarify responses, resume with them
             if clarify_responses:
                 response = response.resume(clarify_responses)
@@ -368,17 +328,33 @@ def cli() -> None:
                 # ----- IMAGE SUPPORT FOR SCREENSHOT TOOL ------------------- #
                 llm_config = config.get("llm", {})
                 supports_images = llm_config.get("support_image", False)
-                
+
                 loaded_images = []
                 if supports_images:
                     for result in tool_outputs:
                         if result.type == "tool_output":
-                            if result.name == "screenshot":
+                            is_screenshot = result.name == "screenshot"
+                            is_computer_use_screenshot = (
+                                result.name == "computer_use"
+                                and isinstance(result.result, str)
+                                and result.result.endswith(".png")
+                            )
+                            if is_screenshot or is_computer_use_screenshot:
                                 print("Adding result image to tool outputs")
                                 loaded_images.append(llm.Text(text = f'--- Screenshot saved at: {result.result}'))
-                                loaded_images.append(llm.Image.from_file(result.result))        
+                                loaded_images.append(llm.Image.from_file(result.result))
 
                 # ----------------------------------------------------------- #
+                # Auto-compact if conversation is too long before resuming
+                # Update token count from response usage if available
+                try:
+                    last_known_token_count = response.usage.total_tokens
+                except Exception:
+                    pass
+                if should_auto_compact():
+                    messages = auto_compact_conversation(messages, system_prompt)
+                    last_known_token_count = 0
+
                 # Resume the LLM with the (possibly image‑enhanced) tool outputs
                 response = response.resume(tool_outputs + loaded_images)
             else:
@@ -391,13 +367,15 @@ def cli() -> None:
             messages = response.messages
 
         # --------------------------------------------------------------- #
-        # Show token usage after each turn
+        # Show token usage after each turn and update tracked count
         if not interrupted:
             try:
-                token_count = response.usage.total_tokens
-            except:
+                last_known_token_count = response.usage.total_tokens
+                token_count = last_known_token_count
+            except Exception:
                 token_count = estimate_tokens_from_messages(messages)
-                
+                last_known_token_count = token_count
+
             max_tokens = config["llm"]["context_size"]
             print()
             print(f"📊 Context window usage: {format_token_estimate(token_count, max_tokens)}")

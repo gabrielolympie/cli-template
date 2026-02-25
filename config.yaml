@@ -3,17 +3,17 @@
 
 llm:
   # API settings
-  # api_base: "http://localhost:5000/v1"  # Optional: set to None or remove for default provider endpoint
-  # provider: "vllm"
-  # model_name: "vllm/vllm"
+  api_base: "http://localhost:5000/v1"  # Optional: set to None or remove for default provider endpoint
+  provider: "vllm"
+  model_name: "vllm/vllm"
 
   # api_base: "https://api.z.ai/api/coding/paas/v4"  # Optional: set to None or remove for default provider endpoint
   # provider: "zai"
   # model_name: "zai/glm-4.7"
 
-  provider: "mistral"      # Mistral AI (OpenAI-compatible endpoint)
-  api_base: "https://api.mistral.ai/v1"
-  model_name: "mistral/labs-devstral-small-2512"  # or mistral-medium-latest, mistral-small-lates
+  # provider: "mistral"      # Mistral AI (OpenAI-compatible endpoint)
+  # api_base: "https://api.mistral.ai/v1"
+  # model_name: "mistral/labs-devstral-small-2512"  # or mistral-medium-latest, mistral-small-lates
 
   # Optional: Override the default API key environment variable
   # If not set, will auto-determine based on provider name (e.g., VLLM_API_KEY, ZAI_API_KEY)
@@ -45,6 +45,7 @@ tools:
   browse_internet: true
   clarify: true
   summarize_conversation: true
+  computer_use: true   # Controls mouse/keyboard — enable explicitly when needed
 
 # Skills Configuration
 skills:
